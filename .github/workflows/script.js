@@ -4,7 +4,7 @@ const statusDiv = document.getElementById('status');
 
 // Configuration
 const config = {
-    DEEPGRAM_API_KEY: 'YOUR_DEEPGRAM_API_KEY', // Replace with your key
+    DEEPGRAM_API_KEY: '6307627d8ed71d885ab1ddd9f4ee746838cecac8', // Replace with your key
     SAMPLE_RATE: 16000, // 16kHz sample rate
     BUFFER_SIZE: 4096, // Buffer size for audio processing
     ENDPOINT: 'wss://api.deepgram.com/v1/listen?encoding=linear16&sample_rate=16000&channels=1'
