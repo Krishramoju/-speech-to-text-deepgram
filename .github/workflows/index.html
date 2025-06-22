@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Speech-to-Text with Deepgram</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Live Speech-to-Text</h1>
+        <p class="subtitle">Powered by Deepgram API</p>
+        
+        <div class="controls">
+            <button id="startStopBtn">Start Listening</button>
+            <div id="status">Status: Ready</div>
+        </div>
+        
+        <textarea id="transcript" placeholder="Your transcribed text will appear here..." readonly></textarea>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
