@@ -4,10 +4,10 @@ const statusDiv = document.getElementById('status');
 
 // Configuration
 const config = {
-    DEEPGRAM_API_KEY:'6307627d8ed71d885ab1ddd9f4ee746838cecac8', // Replace with your key
-    KEEPALIVE_INTERVAL: 30000, // Send ping every 30 seconds
+    DEEPGRAM_API_KEY: 'YOUR_DEEPGRAM_API_KEY', // Replace with your key
     SAMPLE_RATE: 16000, // 16kHz sample rate
-    BUFFER_SIZE: 4096 // Buffer size for audio processing
+    BUFFER_SIZE: 4096, // Buffer size for audio processing
+    ENDPOINT: 'wss://api.deepgram.com/v1/listen?encoding=linear16&sample_rate=16000&channels=1'
 };
 
 let isListening = false;
@@ -16,9 +16,8 @@ let mediaStream;
 let audioContext;
 let processor;
 let source;
-let keepAliveInterval;
 
-// Improved start/stop functionality
+// Initialize
 startStopBtn.addEventListener('click', toggleListening);
 
 async function toggleListening() {
@@ -35,11 +34,9 @@ async function startListening() {
         startStopBtn.disabled = true;
         
         // Initialize audio context
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({
-            sampleRate: config.SAMPLE_RATE
-        });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Get microphone access with better error handling
+        // Get microphone access with proper constraints
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
                 sampleRate: config.SAMPLE_RATE,
@@ -53,8 +50,8 @@ async function startListening() {
         
         if (!mediaStream) return;
         
-        // Create WebSocket connection with more options
-        socket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&language=en', [
+        // Create WebSocket connection with proper parameters
+        socket = new WebSocket(`${config.ENDPOINT}&language=en-US`, [
             'token', 
             config.DEEPGRAM_API_KEY
         ]);
@@ -63,14 +60,7 @@ async function startListening() {
             isListening = true;
             startStopBtn.textContent = 'Stop Listening';
             startStopBtn.disabled = false;
-            statusDiv.textContent = 'Status: Listening...';
-            
-            // Set up keepalive
-            keepAliveInterval = setInterval(() => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'KeepAlive' }));
-                }
-            }, config.KEEPALIVE_INTERVAL);
+            statusDiv.textContent = 'Status: Listening - speak now...';
             
             // Audio processing setup
             source = audioContext.createMediaStreamSource(mediaStream);
@@ -93,19 +83,28 @@ async function startListening() {
         };
         
         socket.onmessage = (message) => {
-            const data = JSON.parse(message.data);
-            if (data.is_final && data.channel?.alternatives?.[0]?.transcript) {
-                transcript.value += ' ' + data.channel.alternatives[0].transcript;
-                // Auto-scroll to bottom
-                transcript.scrollTop = transcript.scrollHeight;
+            try {
+                const data = JSON.parse(message.data);
+                
+                // Handle different response types
+                if (data.type === 'Results') {
+                    const transcriptText = data.channel.alternatives[0].transcript;
+                    if (transcriptText && transcriptText.trim() !== '') {
+                        transcript.value += transcriptText + ' ';
+                        // Auto-scroll to bottom
+                        transcript.scrollTop = transcript.scrollHeight;
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing message:', e);
             }
         };
         
-        socket.onclose = (event) => {
-            if (!event.wasClean) {
-                statusDiv.textContent = `Status: Connection lost (${event.code})`;
+        socket.onclose = () => {
+            if (isListening) {
+                statusDiv.textContent = 'Status: Connection closed unexpectedly';
+                stopListening();
             }
-            stopListening();
         };
         
         socket.onerror = (error) => {
@@ -126,26 +125,12 @@ async function stopListening() {
     
     isListening = false;
     startStopBtn.textContent = 'Start Listening';
-    statusDiv.textContent = 'Status: Processing final data...';
+    statusDiv.textContent = 'Status: Stopping...';
     startStopBtn.disabled = true;
-    
-    // Clear keepalive interval
-    if (keepAliveInterval) {
-        clearInterval(keepAliveInterval);
-        keepAliveInterval = null;
-    }
     
     // Clean up WebSocket
     if (socket) {
         if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'CloseStream' }));
-            await new Promise(resolve => {
-                setTimeout(() => {
-                    socket.close();
-                    resolve();
-                }, 500);
-            });
-        } else {
             socket.close();
         }
         socket = null;
