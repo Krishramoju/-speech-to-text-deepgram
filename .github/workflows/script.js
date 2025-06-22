@@ -4,7 +4,7 @@ const statusDiv = document.getElementById('status');
 
 // Configuration
 const config = {
-    DEEPGRAM_API_KEY: '6307627d8ed71d885ab1ddd9f4ee746838cecac8', // Replace with your key
+    DEEPGRAM_API_KEY:'6307627d8ed71d885ab1ddd9f4ee746838cecac8', // Replace with your key
     KEEPALIVE_INTERVAL: 30000, // Send ping every 30 seconds
     SAMPLE_RATE: 16000, // 16kHz sample rate
     BUFFER_SIZE: 4096 // Buffer size for audio processing
